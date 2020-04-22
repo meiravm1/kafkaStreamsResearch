@@ -19,9 +19,9 @@ object Covid19Totals extends App  {
   val filterHeaders : KStream[String, Array[String]]= lines.filter((key, line) => !line.contains("iso_code,location")).map((key, value) => (value.split(",")(1), value.split(",")))
 
   val totalCases : KStream[String, String]= filterHeaders.map((key,value) => (key, value(3)))
-  val newCases: KTable[String, Long] = filterHeaders.map((key,value) => (key+"_"+ "newCases", value(4).toLong)).groupByKey.reduce(_ + _)(Materialized.as("covid-new-cases-store"))
+  val newCases: KTable[String, Long] = filterHeaders.map((key,value) => (key, value(4).toLong)).groupByKey.reduce(_ + _)(Materialized.as("covid-new-cases-store"))
   val totalDeaths: KStream[String, String] = filterHeaders.map((key,value) => (key, value(5)))
-  val newDeaths: KTable[String, Long] = filterHeaders.map((key,value) => (key+"_"+ "newDeaths", value(6).toLong)).groupByKey.reduce(_ + _)(Materialized.as("covid-new-deaths-store"))
+  val newDeaths: KTable[String, Long] = filterHeaders.map((key,value) => (key, value(6).toLong)).groupByKey.reduce(_ + _)(Materialized.as("covid-new-deaths-store"))
 
   totalCases.to("owid-covid-total-cases")
   newCases.toStream.to("owid-covid-new-cases")
@@ -32,28 +32,41 @@ object Covid19Totals extends App  {
   streams.cleanUp()
   streams.start()
   Thread.sleep(10000)
-  logger.info("is it even written anywhere")
-  val casesStore : ReadOnlyKeyValueStore[Nothing,Nothing]= streams.store("covid-new-cases-store", QueryableStoreTypes.keyValueStore())
-  IterateState("newCases","newDeaths",casesStore)
 
+
+  val casesStore : ReadOnlyKeyValueStore[Nothing,Nothing]= streams.store("covid-new-cases-store", QueryableStoreTypes.keyValueStore())
   val casesDStore : ReadOnlyKeyValueStore[Nothing,Nothing]= streams.store("covid-new-deaths-store", QueryableStoreTypes.keyValueStore())
-  IterateState("newDeaths","newDeaths",casesDStore)
+
+  while (true)
+    {
+      IterateState("newCases","newDeaths",casesStore)
+      IterateState("newDeaths","newDeaths",casesDStore)
+      Thread.sleep(10000)
+
+    }
+
 
   sys.ShutdownHookThread {
     streams.close(Duration.ofSeconds(10))
   }
 
   def IterateState(storeName : String,secondStoreName : String,casesStore : ReadOnlyKeyValueStore[Nothing,Nothing]) = {
+    var top5 = collection.mutable.Map[String,Integer]()
 
-    logger.info("is it even written anywhere??")
     val all = casesStore.all()
     while (all.hasNext) {
       val nextPair = all.next()
-      if (nextPair.key.toString.contains(storeName))
-        logger.info(s"${storeName} for country ${nextPair.key.toString.replace(storeName,"")} is ${nextPair.value.toString.toInt}")
-      else
-        logger.info(s"${secondStoreName} for country ${nextPair.key.toString.replace("secondStoreName","")} is ${nextPair.value.toString.toInt}")
+      logger.info(s"${storeName} for country ${nextPair.key} is ${nextPair.value.toString.toInt}")
+      top5 = top5  + (nextPair.key.toString -> nextPair.value.toString.toInt)
+//      if (nextPair.key.toString.contains(storeName))
+//        logger.info(s"${storeName} for country ${nextPair.key.toString.replace(storeName,"")} is ${nextPair.value.toString.toInt}")
+//      else
+//        logger.info(s"${secondStoreName} for country ${nextPair.key.toString.replace("secondStoreName","")} is ${nextPair.value.toString.toInt}")
 
     }
+    all.close()
+    logger.error(s"Top 5 in ${storeName} are:")
+    logger.error(top5.toSeq.sortWith(_._2 > _._2).take(5))
+
   }
 }
