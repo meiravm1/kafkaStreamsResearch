@@ -37,10 +37,12 @@ object Covid19Totals extends App  {
   val casesStore : ReadOnlyKeyValueStore[Nothing,Nothing]= streams.store("covid-new-cases-store", QueryableStoreTypes.keyValueStore())
   val casesDStore : ReadOnlyKeyValueStore[Nothing,Nothing]= streams.store("covid-new-deaths-store", QueryableStoreTypes.keyValueStore())
 
+  val MyRPCService :  rpcService = ...;
+  rpcService.listenAt(rpcEndpoint);
   while (true)
     {
-      IterateState("newCases","newDeaths",casesStore)
-      IterateState("newDeaths","newDeaths",casesDStore)
+      IterateState("newCases",casesStore)
+      IterateState("newDeaths",casesDStore)
       Thread.sleep(10000)
 
     }
@@ -50,7 +52,7 @@ object Covid19Totals extends App  {
     streams.close(Duration.ofSeconds(10))
   }
 
-  def IterateState(storeName : String,secondStoreName : String,casesStore : ReadOnlyKeyValueStore[Nothing,Nothing]) = {
+  def IterateState(storeName : String,casesStore : ReadOnlyKeyValueStore[Nothing,Nothing]) = {
     var top5 = collection.mutable.Map[String,Integer]()
 
     val all = casesStore.all()
@@ -58,10 +60,6 @@ object Covid19Totals extends App  {
       val nextPair = all.next()
       logger.info(s"${storeName} for country ${nextPair.key} is ${nextPair.value.toString.toInt}")
       top5 = top5  + (nextPair.key.toString -> nextPair.value.toString.toInt)
-//      if (nextPair.key.toString.contains(storeName))
-//        logger.info(s"${storeName} for country ${nextPair.key.toString.replace(storeName,"")} is ${nextPair.value.toString.toInt}")
-//      else
-//        logger.info(s"${secondStoreName} for country ${nextPair.key.toString.replace("secondStoreName","")} is ${nextPair.value.toString.toInt}")
 
     }
     all.close()
