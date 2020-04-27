@@ -37,8 +37,7 @@ object Covid19Totals extends App  {
   val casesStore : ReadOnlyKeyValueStore[Nothing,Nothing]= streams.store("covid-new-cases-store", QueryableStoreTypes.keyValueStore())
   val casesDStore : ReadOnlyKeyValueStore[Nothing,Nothing]= streams.store("covid-new-deaths-store", QueryableStoreTypes.keyValueStore())
 
-  val MyRPCService :  rpcService = ...;
-  rpcService.listenAt(rpcEndpoint);
+
   while (true)
     {
       IterateState("newCases",casesStore)

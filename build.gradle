@@ -5,6 +5,11 @@ repositories {
     mavenCentral()
 }
 
+task customCopyToLib(type: Copy) {
+    into "$buildDir/output/lib"
+    from configurations.runtime
+}
+
 dependencies {
     implementation 'org.scala-lang:scala-library:2.11.12'
     // https://mvnrepository.com/artifact/org.apache.kafka/kafka-streams
@@ -14,6 +19,7 @@ dependencies {
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.3'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.3'
     compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.1'
+
     // https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-server
     //compile group: 'org.eclipse.jetty', name: 'jetty-server', version: '9.4.28.v20200408'
     // https://mvnrepository.com/artifact/org.glassfish.jersey.containers/jersey-container-servlet-core
