@@ -12,8 +12,12 @@ object Covid19Totals extends App  {
   import org.apache.kafka.streams.scala.ImplicitConversions._
   import org.apache.kafka.streams.scala.Serdes._
   val logger = LogManager.getRootLogger
-
-  val config = Stream.initConf(appName = "owid-covid-totals",args(0))
+  var bootstrapServerDefault = "192.168.56.101:29094"
+  if (args.length==0)
+      bootstrapServerDefault = "192.168.56.101:29094"
+  else
+      bootstrapServerDefault = args(0)
+  val config = Stream.initConf(appName = "owid-covid-totals",bootstrapServerDefault)
   val builder = new StreamsBuilder()
   val lines: KStream[String, String] = builder.stream[String, String]("owid-covid-data")
   val filterHeaders : KStream[String, Array[String]]= lines.filter((key, line) => !line.contains("iso_code,location")).map((key, value) => (value.split(",")(1), value.split(",")))
