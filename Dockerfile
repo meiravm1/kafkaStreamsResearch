@@ -1,4 +1,4 @@
-from openjdk:8-jre-alpine
+from bitnami/kafka:2
 RUN mkdir -p /opt/app
 WORKDIR /opt/app
 
