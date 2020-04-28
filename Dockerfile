@@ -1,6 +1,7 @@
 from bitnami/kafka:2
 USER root
 RUN mkdir -p /opt/app
+RUN mkdir -p /opt/app/logs
 WORKDIR /opt/app
 
 COPY ./build/output/lib/  ./build/output/lib/
